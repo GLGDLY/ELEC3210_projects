@@ -31,7 +31,7 @@ OdomICP::OdomICP(ros::NodeHandle &nh):
     scan_pub = nh_.advertise<sensor_msgs::PointCloud2>("current_scan", 1);
     map_pub = nh_.advertise<sensor_msgs::PointCloud2>("cloud_map", 1);
 
-//    traj_file.open(WORK_SPACE_PATH + "/../dataset/true_trajectory.txt");
+   traj_file.open(WORK_SPACE_PATH + "/../dataset/true_trajectory.txt");
     std::cout << "Odometry ICP initialized" << std::endl;
 }
 
@@ -131,9 +131,9 @@ void OdomICP::publishResult() {
 
     Eigen::Vector3d rpy = q.toRotationMatrix().eulerAngles(0, 1, 2) * 180 / M_PI;
     std::cout << "x: " << Twb(0,3) << " y: " << Twb(1,3) << " z: " << Twb(2,3) << " roll: " << rpy(0) << " pitch: " << rpy(1) << " yaw: " << rpy(2)
-    << " time: " << timer.duration_ms() << " ms" << std::endl;
-//    traj_file << std::fixed << cloudHeader.stamp.toSec() << " " << Twb(0,0) << " " << Twb(0,1) << " " << Twb(0,2) << " " << Twb(0,3) << " "
-//    << Twb(1,0) << " " << Twb(1,1) << " " << Twb(1,2) << " " << Twb(1,3) << " "
-//    << Twb(2,0) << " " << Twb(2,1) << " " << Twb(2,2) << " " << Twb(2,3) << std::endl;
+    << " time: " << timer.duration_ms() << " ms" << "size: " << laserCloudIn->size() << std::endl;
+   traj_file << std::fixed << cloudHeader.stamp.toSec() << " " << Twb(0,0) << " " << Twb(0,1) << " " << Twb(0,2) << " " << Twb(0,3) << " "
+   << Twb(1,0) << " " << Twb(1,1) << " " << Twb(1,2) << " " << Twb(1,3) << " "
+   << Twb(2,0) << " " << Twb(2,1) << " " << Twb(2,2) << " " << Twb(2,3) << std::endl;
 }
 
