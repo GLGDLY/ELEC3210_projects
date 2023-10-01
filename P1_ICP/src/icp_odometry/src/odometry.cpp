@@ -57,11 +57,22 @@ void OdomICP::run() {
         }
 
         timer.tic();
+        // TODO
+        
+        // a. Load the raw point cloud data from a sensor or file.
+        // b. Downsample the point cloud data using a voxel grid or a statistical outlier removal filter to reduce the number of points and remove noise and outliers.
+        // c. Pass the downsampled point cloud as the source point cloud (src_cloud) to the ICP algorithm.
+        // d. Pass the target point cloud (tar_cloud) to the ICP algorithm, which may be the previous frame's point cloud or a map of the environment.
+        // e. Run the ICP algorithm to find the transformation matrix and translation vector that aligns the source point cloud to the target point cloud.
+        // f. Use the resulting transformation to update the pose of the robot or the map of the environment.
+        // g. Repeat steps a-f for each new frame of point cloud data.
+        // where 1. is for b., 2 is doing c-e and 
+
         // Odometry estimation
         // 1. preprocess: downsample
         // 2. icp
-        // 3. update pose
         Twb = icp_registration(laserCloudIn, refCloud, Twb);
+        // 3. update pose
         // 4. update reference cloud
         timer.toc();
         // 5. publish result
