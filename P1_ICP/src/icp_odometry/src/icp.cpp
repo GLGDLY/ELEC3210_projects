@@ -90,9 +90,14 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud, 
                     corrDistance[sample] = pointKNNSquaredDistance[0];
             }
         }
-    
+
+
+        //TODO
+        //Start to impliment the SVD and find transformation matrix
+
 
         // check converge
+        //TODO, need a better way to check convergency
         if (std::all_of(pointKNNSquaredDistance.cbegin(), pointKNNSquaredDistance.cend(), [](int i) { return i < THRESHOLD; })) {
             converged = true;
         }
