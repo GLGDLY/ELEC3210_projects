@@ -52,6 +52,7 @@
 Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud, pcl::PointCloud<pcl::PointXYZ>::Ptr tar_cloud, Eigen::Matrix4d init_guess) {
 
     Eigen::Matrix4d transformation = init_guess;
+    Eigen::Matrix4d prev_transformation = transformation;
     Eigen::Vector3f translation = Eigen::Vector3f::Zero();
 
     // 1. https://pointclouds.org/documentation/tutorials/kdtree_search.html
@@ -94,20 +95,57 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud, 
 
         //TODO
         //Start to impliment the SVD and find transformation matrix
+        // Construct the point-to-point correspondences for SVD
+        pcl::PointCloud<pcl::PointXYZ>::Ptr matched_src_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr matched_tar_cloud(new pcl::PointCloud<pcl::PointXYZ>);
 
+        for (std::size_t i = 0; i < src_cloud->points.size(); ++i) {
+            if (corrIndex[i] != -1) {
+                matched_src_cloud->points.push_back(src_cloud->points[i]);
+                matched_tar_cloud->points.push_back(tar_cloud->points[corrIndex[i]]);
+            }
+        }
+
+        // Compute the centroids of the matched point clouds
+        pcl::PointXYZ src_centroid, tar_centroid;
+        pcl::computeCentroid(*matched_src_cloud, src_centroid);
+        pcl::computeCentroid(*matched_tar_cloud, tar_centroid);
+
+        // Subtract the centroids from the matched point clouds
+        Eigen::MatrixXf src_centered(matched_src_cloud->points.size(), 3);
+        Eigen::MatrixXf tar_centered(matched_tar_cloud->points.size(), 3);
+
+        for (std::size_t i = 0; i < matched_src_cloud->points.size(); ++i) {
+            src_centered.row(i) = Eigen::Vector3f(matched_src_cloud->points[i].x, matched_src_cloud->points[i].y, matched_src_cloud->points[i].z) - Eigen::Vector3f(src_centroid.x, src_centroid.y, src_centroid.z);
+            tar_centered.row(i) = Eigen::Vector3f(matched_tar_cloud->points[i].x, matched_tar_cloud->points[i].y, matched_tar_cloud->points[i].z) - Eigen::Vector3f(tar_centroid.x, tar_centroid.y, tar_centroid.z);
+        }
+
+        // Compute the covariance matrix and solve for the singular value decomposition (SVD)
+        Eigen::Matrix3f covariance_matrix = src_centered.transpose() * tar_centered;
+        Eigen::JacobiSVD<Eigen::Matrix3f> svd(covariance_matrix, Eigen::ComputeFullU | Eigen::ComputeFullV);
+
+        // Calculate the optimal rotation matrix and translation vector
+        Eigen::Matrix3f optimal_rotation = svd.matrixU() * svd.matrixV().transpose();
+        Eigen::Vector3f optimal_translation = tar_centroid.getVector3fMap() - optimal_rotation * src_centroid.getVector3fMap();
+
+        // Update the transformation matrix
+        update_transformation.block<3, 3>(0, 0) = optimal_rotation;
+        update_transformation.block<3, 1>(0, 3) = optimal_translation;
+
+        // Apply the update to the current transformation
+        transformation = update_transformation * transformation;
 
         // check converge
         //TODO, need a better way to check convergency
-        if (std::all_of(pointKNNSquaredDistance.cbegin(), pointKNNSquaredDistance.cend(), [](int i) { return i < THRESHOLD; })) {
-            converged = true;
+         if ((transformation - prev_transformation).norm() < THRESHOLD) {
+                converged = true;
+            } 
+            else{
+                prev_transformation = transformation;
+            }
+
+                num_of_iters++;   
         }
-            
-        
-        num_of_iters++;   
-    }
-
-
-    // 2. https://github.com/Gregjksmith/Iterative-Closest-Point/blob/master/src/ICP.cpp
         
 
     return transformation;
