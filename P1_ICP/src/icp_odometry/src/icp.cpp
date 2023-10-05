@@ -52,7 +52,7 @@
 Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud, pcl::PointCloud<pcl::PointXYZ>::Ptr tar_cloud, Eigen::Matrix4d init_guess) {
 
     Eigen::Matrix4d transformation = init_guess;
-    Eigen::Vector3f translation = Eighen::Vector3f::Zero();
+    Eigen::Vector3f translation = Eigen::Vector3f::Zero();
 
     // 1. https://pointclouds.org/documentation/tutorials/kdtree_search.html
 
@@ -71,27 +71,26 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud, 
     std::vector<float> pointKNNSquaredDistance(K);  // the distance of the neighbor
 
     //Create array to store the information for the neighbours
-    std::vector<int> corrIndex(rc_cloud->points.size());
-    std::vector<float> corrDistance(rc_cloud->points.size());
+    std::vector<int> corrIndex(src_cloud->points.size());
+    std::vector<float> corrDistance(src_cloud->points.size());
 
     int num_of_iters = 0;
     //Start iteration
     while (!converged || num_of_iters < MAX_ITER) {
         // Transform the src_cloud using current transformation matrix
-        pcl::PointCloud<pcl::PointXYZ> curr_transformedcloud;
-        pcl::transformPointCloud(*src_cloud,curr_transformedcloud,transformation,translation);
+        pcl::PointCloud<pcl::PointXYZ>::Ptr curr_transformedcloud(new pcl::PointCloud<pcl::PointXYZ>);
+        pcl::transformPointCloud(*src_cloud,*curr_transformedcloud,transformation);
 
         // loop through each point in the src point cloud and find its nearest neighbor in tar and store it's information
         for (std::size_t sample = 0; sample < src_cloud->points.size(); sample += 50) {
             // once found just overwrite the value of the point in src
-            if (kdtree.nearestKSearch (src_cloud->points[sample], K, pointIdxKNNSearch, pointKNNSquaredDistance) > 0 ) {
+            if (kdtree.nearestKSearch (curr_transformedcloud->points[sample], K, pointIdxKNNSearch, pointKNNSquaredDistance) > 0 ) {
                     //The new closer point found, store that into the correspondance array
-                    corrIndex(sample) = pointIdxK5NNSearch(0);
-                    corrDistance(sample) = pointKNNSquaredDistance(0);
+                    corrIndex[sample] = pointIdxKNNSearch[0];
+                    corrDistance[sample] = pointKNNSquaredDistance[0];
             }
         }
-
-        Eigem::JacobiSVD<Eigen::MatrixXd> svd(demean,)
+    
 
         // check converge
         if (std::all_of(pointKNNSquaredDistance.cbegin(), pointKNNSquaredDistance.cend(), [](int i) { return i < THRESHOLD; })) {
