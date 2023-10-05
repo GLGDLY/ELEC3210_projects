@@ -5,6 +5,7 @@
 **/
 #include "icp.h"
 #include <pcl/registration/icp.h>
+#include <pcl/registration/transformation_estimation_svd_scale.h>
 #include "parameters.h"
 #include <pcl/kdtree/kdtree.h>
 
@@ -101,51 +102,64 @@
 
 //Hartin's shit from himself with help of chatGPTs, and Hartin himself can't understand this shit but looked working(hopefully)
 
-Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud, pcl::PointCloud<pcl::PointXYZ>::Ptr tar_cloud, Eigen::Matrix4d init_guess) {
+// Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud, pcl::PointCloud<pcl::PointXYZ>::Ptr tar_cloud, Eigen::Matrix4d init_guess) {
     
-    // Create a kd-tree for the target point cloud
-    pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
-    kdtree.setInputCloud(tar_cloud);
+//     // Create a kd-tree for the target point cloud
+//     pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+//     kdtree.setInputCloud(tar_cloud);
 
-    // Maximum number of iterations and convergence criteria
-    int max_iterations = 100;
-    double transformation_epsilon = 1e-8;   //Can modify this
+//     // Maximum number of iterations and convergence criteria
+//     int max_iterations = 100;
+//     double transformation_epsilon = 1e-8;   //Can modify this
 
-    Eigen::Matrix4d transformation = init_guess;
+//     Eigen::Matrix4d transformation = init_guess;
 
-    for (int i = 0; i < max_iterations; ++i) {
+//     for (int i = 0; i < max_iterations; ++i) {
 
-        // Transform the source point cloud using the current estimated transformation
-        //Create a new pointCLoud called transformed_src_cloud
-        pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_src_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-        //Perform a transformation of the src_cloud and store it into transformed_src_cloud according to current transformation matrix
-        pcl::transformPointCloud(*src_cloud, *transformed_src_cloud, transformation);
+//         // Transform the source point cloud using the current estimated transformation
+//         //Create a new pointCLoud called transformed_src_cloud
+//         pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_src_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+//         //Perform a transformation of the src_cloud and store it into transformed_src_cloud according to current transformation matrix
+//         pcl::transformPointCloud(*src_cloud, *transformed_src_cloud, transformation);
 
-        // Find correspondences using kd-tree
-        pcl::Correspondences correspondences;   //create a correspondence vector called correspondences to store the association between a point in the transformed source cloud and its correesponding point in the tar_cloud
-        for (const auto& point : transformed_src_cloud->points) {
-            std::vector<int> indices(1);    //store index of neighboring in the tar_cloud
-            std::vector<float> squared_distances(1); // store the squared distance between the cur point and neighor
+//         // Find correspondences using kd-tree
+//         pcl::Correspondences correspondences;   //create a correspondence vector called correspondences to store the association between a point in the transformed source cloud and its correesponding point in the tar_cloud
+//         for (const auto& point : transformed_src_cloud->points) {
+//             std::vector<int> indices(1);    //store index of neighboring in the tar_cloud
+//             std::vector<float> squared_distances(1); // store the squared distance between the cur point and neighor
 
-            //find the nearest neighor, 1 means number of neighbors needed and indices and squared_distance is the data from the nearest neighbor
-            kdtree.nearestKSearch(point, 1, indices, squared_distances);
+//             //find the nearest neighor, 1 means number of neighbors needed and indices and squared_distance is the data from the nearest neighbor
+//             kdtree.nearestKSearch(point, 1, indices, squared_distances);
 
-            //Create a Correspondence object called correspondence. init with index of nearest neighbor and size of the correspondences vector with squared distance from nearest neighbor
-            pcl::Correspondence correspondence(indices[0], static_cast<int>(correspondences.size()), squared_distances[0]); 
-            //add this correspondence object to the correspondence vector.
-            correspondences.push_back(correspondence);
-        }
+//             //Create a Correspondence object called correspondence. init with index of nearest neighbor and size of the correspondences vector with squared distance from nearest neighbor
+//             pcl::Correspondence correspondence(indices[0], static_cast<int>(correspondences.size()), squared_distances[0]); 
+//             //add this correspondence object to the correspondence vector.
+//             correspondences.push_back(correspondence);
+//         }
 
-        // Estimate the transformation using Singular Value Decomposition (SVD)
-        Eigen::Matrix4d previous_transformation = transformation; //Store previouse transformation
-        transformation = pcl::estimateRigidTransformationSVD(*transformed_src_cloud, *tar_cloud, correspondences);  //Using SVD to calculate the new transformation matrix
+//         // Estimate the transformation using Singular Value Decomposition (SVD)
+//         Eigen::Matrix4d previous_transformation = transformation; //Store previouse transformation
+//         transformation = pcl::estimateRigidTransformationSVD(*transformed_src_cloud, *tar_cloud, correspondences);  //Using SVD to calculate the new transformation matrix
 
-        // Check convergence
-        double delta = (transformation - previous_transformation).norm();   //Calculate the Euclidean orm of the two matrixs, represents the magnitude of the difference between the two transgormation matrices
-        if (delta < transformation_epsilon) {   //if the difference is too small between two genereations, then it is almost aligned, stop here
-            break;
-        }
-    }
+//         // Check convergence
+//         double delta = (transformation - previous_transformation).norm();   //Calculate the Euclidean orm of the two matrixs, represents the magnitude of the difference between the two transgormation matrices
+//         if (delta < transformation_epsilon) {   //if the difference is too small between two genereations, then it is almost aligned, stop here
+//             break;
+//         }
+//     }
 
-    return transformation;
+//     return transformation;
+// }
+
+
+
+
+//try to use TransformationEstimationSVD
+Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud, pcl::PointCloud<pcl::PointXYZ>::Ptr tar_cloud, Eigen::Matrix4d init_guess) {
+
+// Fill in the source and target point clouds
+    pcl::registration::TransformationEstimationSVD<pcl::PointXYZ, pcl::PointXYZ> svd;
+    Eigen::Matrix4f transformation_matrix;
+    svd.estimateRigidTransformation(*src_cloud, *tar_cloud, transformation_matrix);
+    return transformation_matrix;
 }
