@@ -1,9 +1,11 @@
 #include "odometry.h"
+#include <iostream>
 #include <sensor_msgs/PointCloud2.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl/filters/filter.h>
 #include <pcl/common/transforms.h>
 #include <pcl/filters/passthrough.h>
+#include <pcl/filters/statistical_outlier_removal.h>
 #include "global_definition.h"
 
 using namespace std;
@@ -33,6 +35,8 @@ OdomICP::OdomICP(ros::NodeHandle &nh):
 
    traj_file.open(WORK_SPACE_PATH + "/../dataset/true_trajectory.txt");
     std::cout << "Odometry ICP initialized" << std::endl;
+    // run
+    run();
 }
 
 void OdomICP::run() {
@@ -70,6 +74,19 @@ void OdomICP::run() {
 
         // Odometry estimation
         // 1. preprocess: downsample
+        // The down sampling is modified from https://pcl.readthedocs.io/projects/tutorials/en/latest/statistical_outlier.html
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_filtered(new pcl::PointCloud<pcl::PointXYZ>);
+        // Downsample with statistical outlier removal filter
+        std:cerr << "PointCloud before filtering: " << std::endl << *cloud_filtered << std::endl;
+
+        // Create the filtering object
+        pcl::StatisticalOutlierRemoval<pcl::PointXYZ> sor;
+        sor.setInputCloud (laserCloudIn);
+        sor.setMeanK (50);
+        sor.setStddevMulThresh (1.0);
+        sor.filter (*cloud_filtered);
+        std::cerr << "Cloud after filtering: " << std::endl;
+        std::cerr << *cloud_filtered << std::endl;
         // 2. icp
         Twb = icp_registration(laserCloudIn, refCloud, Twb);
         // 3. update pose
