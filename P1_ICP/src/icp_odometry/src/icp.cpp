@@ -74,14 +74,16 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
 		Eigen::Matrix3d H = src * tar.transpose();
 
 		Eigen::JacobiSVD<Eigen::Matrix3d> svd(H, Eigen::ComputeFullU | Eigen::ComputeFullV);
+		Eigen::Matrix3d U = svd.matrixU();
+		Eigen::Matrix3d V = svd.matrixV();
 
-		Eigen::Matrix3d Rotation = svd.matrixV() * svd.matrixU().transpose();
+		Eigen::Matrix3d Rotation = V * U.transpose();
 
 		if (Rotation.determinant() < 0) {
 			for (int i = 0; i < 3; i++) {
-				svd.matrixU()(i, 2) *= -1;
+				U(i, 2) *= -1;
 			}
-			Rotation = svd.matrixV() * svd.matrixU().transpose();
+			Rotation = V * U.transpose();
 		}
 
 		Eigen::Vector3d Translation = tar_mean - Rotation * src_mean;
@@ -100,11 +102,24 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
 
 		pcl::transformPointCloud(*src_cloud, *transformed_cloud, transformation);
 
-		delete correspondences;
-		delete correspondences_filtered;
-
 		iter++;
 	}
+
+	return transformation;
+}
+
+Eigen::Matrix4d icp_registration1(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
+								  pcl::PointCloud<pcl::PointXYZ>::Ptr tar_cloud, Eigen::Matrix4d init_guess) {
+	pcl::IterativeClosestPointWithNormals<pcl::PointXYZ, pcl::PointXYZ> icp;
+	icp.setInputSource(src_cloud);
+	icp.setInputTarget(tar_cloud);
+	icp.setMaximumIterations(params::max_iterations);
+	icp.setMaxCorrespondenceDistance(params::max_distance);
+
+	pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+	icp.align(*transformed_cloud, init_guess);
+
+	Eigen::Matrix4d transformation = icp.getFinalTransformation();
 
 	delete transformed_cloud;
 
