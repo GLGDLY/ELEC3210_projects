@@ -23,9 +23,9 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
 	pcl::transformPointCloud(*src_cloud, *transformed_cloud, transformation);
 
 	uint32_t iter = 0;
-
+  std::cout<<"start it\n";
 	while (iter < params::max_iterations) {
-		try {
+    std::cout<<"it"<<iter <<": ";
 			pcl::PointCloud<pcl::PointXYZ>::Ptr correspondences(new pcl::PointCloud<pcl::PointXYZ>);
 			std::vector<int> correspondences_indices;
 			std::vector<float> correspondences_distances;
@@ -51,10 +51,10 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
 					correspondences_filtered_distances.push_back(correspondences_distances[i]);
 				}
 			}
-
+      
 			Eigen::Matrix<double, 3, Eigen::Dynamic> src(3, correspondences_filtered->points.size());
 			Eigen::Matrix<double, 3, Eigen::Dynamic> tar(3, correspondences_filtered->points.size());
-
+      
 			for (int i = 0; i < correspondences_filtered->points.size(); i++) {
 				src(0, i) = transformed_cloud->points[i].x;
 				src(1, i) = transformed_cloud->points[i].y;
@@ -63,15 +63,18 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
 				tar(1, i) = correspondences_filtered->points[i].y;
 				tar(2, i) = correspondences_filtered->points[i].z;
 			}
-
+      
+      std::cout<<"dicentrolize   ";
 			Eigen::Matrix<double, 3, 1> src_mean = src.rowwise().mean();
 			Eigen::Matrix<double, 3, 1> tar_mean = tar.rowwise().mean();
+
 
 			for (int i = 0; i < correspondences_filtered->points.size(); i++) {
 				src.col(i) -= src_mean;
 				tar.col(i) -= tar_mean;
 			}
 
+      std::cout<<"SVD    ";
 			Eigen::Matrix3d H = src * tar.transpose();
 
 			Eigen::JacobiSVD<Eigen::Matrix3d> svd(H, Eigen::ComputeFullU | Eigen::ComputeFullV);
@@ -93,8 +96,15 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
 			update_transformation.block<3, 3>(0, 0) = Rotation;
 			update_transformation.block<3, 1>(0, 3) = Translation;
 
-			transformation = update_transformation * transformation;
 
+      std::cout<<"Check cov  ";
+			Eigen::Matrix4d _transformation = update_transformation * transformation;
+      if (_transformation.rows() != 4 || _transformation.cols() != 4) {
+        break;
+      } else {
+        transformation = _transformation;
+      }
+      
 			if ((transformation - prev_transformation).norm() < params::max_distance) {
 				break;
 			} else {
@@ -102,12 +112,10 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
 			}
 
 			pcl::transformPointCloud(*src_cloud, *transformed_cloud, transformation);
-
+      std::cout<<"it"<<iter<<" end\n";
 			iter++;
-		} catch (...) {
-			break;
-		}
 	}
 
+  std::cout<<"E\n\n";
 	return transformation;
 }
