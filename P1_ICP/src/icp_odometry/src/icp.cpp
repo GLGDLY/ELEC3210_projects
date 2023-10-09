@@ -78,7 +78,9 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
 		Eigen::Matrix3d Rotation = svd.matrixV() * svd.matrixU().transpose();
 
 		if (Rotation.determinant() < 0) {
-			svd.matrixU().col(2) *= -1;
+			for (int i = 0; i < 3; i++) {
+				svd.matrixU()(i, 2) *= -1;
+			}
 			Rotation = svd.matrixV() * svd.matrixU().transpose();
 		}
 
