@@ -73,7 +73,10 @@ void OdomICP::run() {
 		// Odometry estimation
 
 		// 1. preprocess: downsample
-		dsFilterScan.setInputCloud(laserCloudIn);
+		if (laserCloudIn->empty()) {
+			continue;
+		}
+        dsFilterScan.setInputCloud(laserCloudIn);
 		dsFilterScan.filter(*laserCloudIn);
 		dsFilterMap.setInputCloud(refCloud);
 		dsFilterMap.filter(*refCloud);
@@ -88,7 +91,9 @@ void OdomICP::run() {
 		// Twb = Twb_gt;
 
 		// 4. update reference cloud
-		*refCloud = *laserCloudIn;
+		if (!laserCloudIn->empty()) {
+			*refCloud = *laserCloudIn;
+		}
 
 		timer.toc();
 		// 5. publish result
