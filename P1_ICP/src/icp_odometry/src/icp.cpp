@@ -107,21 +107,3 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
 
 	return transformation;
 }
-
-Eigen::Matrix4d icp_registration1(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
-								  pcl::PointCloud<pcl::PointXYZ>::Ptr tar_cloud, Eigen::Matrix4d init_guess) {
-	pcl::IterativeClosestPointWithNormals<pcl::PointXYZ, pcl::PointXYZ> icp;
-	icp.setInputSource(src_cloud);
-	icp.setInputTarget(tar_cloud);
-	icp.setMaximumIterations(params::max_iterations);
-	icp.setMaxCorrespondenceDistance(params::max_distance);
-
-	pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-	icp.align(*transformed_cloud, init_guess);
-
-	Eigen::Matrix4d transformation = icp.getFinalTransformation();
-
-	delete transformed_cloud;
-
-	return transformation;
-}
