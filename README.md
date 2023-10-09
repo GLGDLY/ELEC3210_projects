@@ -19,6 +19,14 @@ source devel/setup.bash
 
 4. Run the code
 
+* In terminal 1, run the following command
+
+```bash
+roscore
+```
+
+* In terminal 2, run the following command
+
 ```bash
 roslaunch icp_odometry icp.launch
 ```
