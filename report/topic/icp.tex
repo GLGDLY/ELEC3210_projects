@@ -1,0 +1,19 @@
+\section{ICP}
+For the ICP algorithm, we have implemented the function with the following steps:
+\begin{itemize}
+    \item Initialize a KdTree with the target point cloud.
+    \item Initialize the transformation and previous transformation matrices to identity.
+    \item Transform the source point cloud using the initial guess transformation.
+    \item While the number of iterations is less than the maximum number of iterations: 
+    \begin{itemize}
+        \item Find the nearest neighbor correspondences between the transformed source point cloud and the target point cloud using the KdTree. 
+        \item Compute the mean-centered source and target point clouds. 
+        \item Compute the $3x3$ matrix $H$ from the mean-centered source and target point clouds. 
+        \item Compute the Singular Value Decomposition (SVD) of $H$ using the \texttt{JacobiSVD} function. 
+        \item Compute the rotation and translation components of the transformation from the SVD factors. 
+        \item Update the transformation matrix with the computed rotation and translation components. 
+        \item Check if the difference between the current and previous transformations is less than the maximum distance threshold. If so, break out of the loop. 
+        \item Set the previous transformation to the current transformation.
+    \end{itemize}
+    \item Return the final transformation matrix.
+\end{itemize}
