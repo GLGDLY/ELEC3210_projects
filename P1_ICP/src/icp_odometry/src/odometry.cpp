@@ -84,14 +84,15 @@ void OdomICP::run() {
 		// 2. icp
 		Twb_prev = Twb;
 		Twb = icp_registration(laserCloudIn, refCloud, Twb);
-		std::cout<<"ICP DONE\n";
+		
 		// 3. update pose
 		// deltaT_pred = Twb * Twb_prev.inverse();
 		// Twb_gt = Twb_gt * deltaT_pred;
 		// Twb = Twb_gt;
 
 		// 4. update reference cloud
-		if (!laserCloudIn->empty()) {
+		// key frame determination with timestamp
+		if (!laserCloudIn->empty() && (cloudHeader.stamp.toSec() - refCloudHeader.stamp.toSec() > 0.5)) {
 			*refCloud = *laserCloudIn;
 		}
 

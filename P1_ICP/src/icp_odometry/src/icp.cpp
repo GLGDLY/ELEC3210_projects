@@ -23,9 +23,7 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
 	pcl::transformPointCloud(*src_cloud, *transformed_cloud, transformation);
 
 	uint32_t iter = 0;
-  	std::cout<<"start it\n";
 	while (iter < params::max_iterations) {
-		std::cout<<"it"<<iter <<": ";
 		pcl::PointCloud<pcl::PointXYZ>::Ptr correspondences(new pcl::PointCloud<pcl::PointXYZ>);
 		std::vector<int> correspondences_indices;
 		std::vector<float> correspondences_distances;
@@ -40,41 +38,42 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
 			correspondences_distances.push_back(pointNKNSquaredDistance[0]);
 		}
 
-		pcl::PointCloud<pcl::PointXYZ>::Ptr correspondences_filtered(new pcl::PointCloud<pcl::PointXYZ>);
-		std::vector<int> correspondences_filtered_indices;
-		std::vector<float> correspondences_filtered_distances;
+		// pcl::PointCloud<pcl::PointXYZ>::Ptr correspondences_filtered(new pcl::PointCloud<pcl::PointXYZ>);
+		// std::vector<int> correspondences_filtered_indices;
+		// std::vector<float> correspondences_filtered_distances;
 
+		// for (int i = 0; i < correspondences->points.size(); i++) {
+		// 	if (correspondences_distances[i] < params::max_distance) {
+		// 		correspondences_filtered->points.push_back(correspondences->points[i]);
+		// 		correspondences_filtered_indices.push_back(correspondences_indices[i]);
+		// 		correspondences_filtered_distances.push_back(correspondences_distances[i]);
+		// 	}
+		// }
+		// if (correspondences_filtered->points.size() == 0) {
+		// 	break;
+		// }
+	
+		Eigen::Matrix<double, 3, Eigen::Dynamic> src(3, correspondences->points.size());
+		Eigen::Matrix<double, 3, Eigen::Dynamic> tar(3, correspondences->points.size());
+	
 		for (int i = 0; i < correspondences->points.size(); i++) {
-			if (correspondences_distances[i] < params::max_distance) {
-				correspondences_filtered->points.push_back(correspondences->points[i]);
-				correspondences_filtered_indices.push_back(correspondences_indices[i]);
-				correspondences_filtered_distances.push_back(correspondences_distances[i]);
-			}
-		}
-	
-		Eigen::Matrix<double, 3, Eigen::Dynamic> src(3, correspondences_filtered->points.size());
-		Eigen::Matrix<double, 3, Eigen::Dynamic> tar(3, correspondences_filtered->points.size());
-	
-		for (int i = 0; i < correspondences_filtered->points.size(); i++) {
 			src(0, i) = transformed_cloud->points[i].x;
 			src(1, i) = transformed_cloud->points[i].y;
 			src(2, i) = transformed_cloud->points[i].z;
-			tar(0, i) = correspondences_filtered->points[i].x;
-			tar(1, i) = correspondences_filtered->points[i].y;
-			tar(2, i) = correspondences_filtered->points[i].z;
+			tar(0, i) = correspondences->points[i].x;
+			tar(1, i) = correspondences->points[i].y;
+			tar(2, i) = correspondences->points[i].z;
 		}
       
-        std::cout<<"dicentrolize   ";
 		Eigen::Matrix<double, 3, 1> src_mean = src.rowwise().mean();
 		Eigen::Matrix<double, 3, 1> tar_mean = tar.rowwise().mean();
 
 
-		for (int i = 0; i < correspondences_filtered->points.size(); i++) {
+		for (int i = 0; i < correspondences->points.size(); i++) {
 			src.col(i) -= src_mean;
 			tar.col(i) -= tar_mean;
 		}
 
-        std::cout<<"SVD    ";
 		Eigen::Matrix3d H = src * tar.transpose();
 
 		Eigen::JacobiSVD<Eigen::Matrix3d> svd(H, Eigen::ComputeFullU | Eigen::ComputeFullV);
@@ -97,24 +96,29 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
 		update_transformation.block<3, 1>(0, 3) = Translation;
 
 
-		std::cout<<"Check cov  ";
-				Eigen::Matrix4d _transformation = update_transformation * transformation;
+		transformation = update_transformation * transformation;
 		
 		if ((transformation - prev_transformation).norm() < params::max_distance) {
 			break;
 		} else {
 			prev_transformation = transformation;
 		}
+		
+		// pcl::transformPointCloud(*src_cloud, *transformed_cloud, _transformation);
+		// // check if transformed cloud is not empty
+		// if (transformed_cloud->points.size() > 0) {
+		// 	transformation = _transformation;
+		// } else {
+		// 	break;
+		// }
 
-		pcl::transformPointCloud(*src_cloud, *transformed_cloud, transformation);
-		std::cout<<"it"<<iter<<" end\n";
 		iter++;
 
 		// prevent destructor error
 		correspondences.reset();
-		correspondences_filtered.reset();
+		// correspondences_filtered.reset();
+		
 	}
 
-  std::cout<<"E\n\n";
 	return transformation;
 }

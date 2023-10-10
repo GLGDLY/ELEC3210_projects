@@ -30,6 +30,9 @@ private:
     pcl::PointCloud<pcl::PointXYZ>::Ptr laserCloudIn;
     pcl::PointCloud<pcl::PointXYZ>::Ptr refCloud;
     std::queue<std::pair<std_msgs::Header, sensor_msgs::PointCloud2ConstPtr>> cloudQueue;
+    
+    // keep timestamp of last key frame
+    std_msgs::Header refCloudHeader;
 
     Eigen::Matrix4d Twb; // transformation from body to world
     Eigen::Matrix4d Twk; // transformation from keyframe to world
