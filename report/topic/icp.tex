@@ -8,7 +8,7 @@ For the ICP algorithm, we have implemented the function with the following steps
     \begin{itemize}
         \item Find the nearest neighbor correspondences between the transformed source point cloud and the target point cloud using the KdTree. 
         \item Compute the mean-centered source and target point clouds. 
-        \item Compute the $3x3$ matrix $H$ from the mean-centered source and target point clouds. 
+        \item Compute the $3 \times 3$ matrix $H$ from the mean-centered source and target point clouds. 
         \item Compute the Singular Value Decomposition (SVD) of $H$ using the \texttt{JacobiSVD} function. 
         \item Compute the rotation and translation components of the transformation from the SVD factors. 
         \item Update the transformation matrix with the computed rotation and translation components. 
