@@ -1,1 +1,13 @@
 \section{Odometry}
+For the odometry, we have implicated it with the following steps:
+\begin{enumerate}
+    \item Check if the point cloud queue is empty. If it is, the function sleeps and continues to the next iteration of the loop.
+    \item Lock the point cloud queue and retrieve the next point cloud data from the queue.
+    \item If this is the first frame, initialize the transformation matrix \texttt{Twb} to the identity matrix, set firstFrame to false, and set the reference cloud to the current point cloud.
+    \item Downsample the input point cloud with a voxel grid filter.
+    \item Downsample the reference cloud with a voxel grid filter.
+    \item Preform ICP registration with the current point cloud and the reference cloud and the guess (\texttt{Twb}).
+    \item Update the reference cloud if the current frame is determined to be a key frame based on distance and rotation angle from the previous key frame, or if the time elapsed since the last key frame is greater than 5 seconds.
+    \item Publish the odometry estimation result.
+    \item Sleep for a short period of time to maintain a constant loop rate.
+\end{enumerate}
