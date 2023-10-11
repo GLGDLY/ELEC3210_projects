@@ -54,7 +54,9 @@ void OdomICP::run() {
 		if (firstFrame) {
 			firstFrame = false;
 			Twb = Eigen::Matrix4d::Identity();
+			Twb_gt = Eigen::Matrix4d::Identity();
 			*refCloud = *laserCloudIn;
+
 			continue;
 		}
 
@@ -69,32 +71,75 @@ void OdomICP::run() {
 		// transformation matrix and translation vector that aligns the source point cloud to the target point cloud. f.
 		// Use the resulting transformation to update the pose of the robot or the map of the environment. g. Repeat
 		// steps a-f for each new frame of point cloud data. where 1. is for b., 2 is doing c-e and
+		// twb need to be recorded in the traj file for error comparing.
+		// icp_registration will return a transformation matrix from current to previous
+
 
 		// Odometry estimation
 
 		// 1. preprocess: downsample
+		//create a point cloud copy the refCloud to prepare src cloud for isp
+		pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+		*src_cloud = *refCloud;
+		
+		// pcl::transformPointCloud(*src_cloud, *src_cloud, Twb_gt);
+		
 		if (laserCloudIn->empty()) {
 			continue;
 		}
-        dsFilterScan.setInputCloud(laserCloudIn);
+		dsFilterScan.setInputCloud(laserCloudIn);
 		dsFilterScan.filter(*laserCloudIn);
 		dsFilterMap.setInputCloud(refCloud);
 		dsFilterMap.filter(*refCloud);
 
+
 		// 2. icp
-		Twb_prev = Twb;
 		Twb = icp_registration(laserCloudIn, refCloud, Twb);
-		
+
 		// 3. update pose
-		// deltaT_pred = Twb * Twb_prev.inverse();
-		// Twb_gt = Twb_gt * deltaT_pred;
-		// Twb = Twb_gt;
+		// sum of translationa nd rotation matrix of current and prev twb
+		// Twb_gt(0, 3) += Twb(0, 3);
+		// Twb_gt(1, 3) += Twb(1, 3);
+		// Twb_gt(2, 3) += Twb(2, 3);
+		// Twb_gt = Twb_gt.inverse() * Twb;
+
+		// Twb_gt.block<3, 3>(0, 0) = Twb_gt.block<3, 3>(0, 0).inverse()* Twb.block<3, 3>(0, 0);
+		// Eigen::Matrix3d trans = Twb_gt.block<3, 3>(0, 0).cross(Twb.block<3, 3>(0, 0));
+		// Twb_prev = Twb;
 
 		// 4. update reference cloud
-		// key frame determination with timestamp
-		if (!laserCloudIn->empty() && (cloudHeader.stamp.toSec() - refCloudHeader.stamp.toSec() > 0.5)) {
+		// key frame determination with distance and rotation angle
+		if (!laserCloudIn->empty() && (Twb.block<3, 1>(0, 3) - Twb_prev.block<3, 1>(0, 3)).norm() > 0.5
+			|| (cloudHeader.stamp.toSec() - refCloudHeader.stamp.toSec() > 5)) {
 			*refCloud = *laserCloudIn;
 		}
+
+		//implement scan to map
+		// Eigen::Matrix3d Rwb = Twb.block<3, 3>(0, 0).inverse();
+
+
+		// Rwb = Rwb.inverse();
+
+		// Eigen::Matrix4d Twb_inv;
+		// Twb_inv.block<3, 3>(0, 0) = Rwb;
+		// Twb_inv(0, 0) = Rwb(0,0);
+		// Twb_inv(0, 1) = Rwb(0,1);
+		// Twb_inv(0, 2) = Rwb(0,2);
+		// Twb_inv(1, 0) = Rwb(1,0);
+		// Twb_inv(1, 1) = Rwb(1,1);
+		// Twb_inv(1, 2) = Rwb(1,2);
+		// Twb_inv(2, 0) = Rwb(2,0);
+		// Twb_inv(2, 1) = Rwb(2,1);
+		// Twb_inv(2, 2) = Rwb(2,2);
+
+
+		// Twb_inv(0, 3) = -Twb_inv(0, 3);
+		// Twb_inv(1, 3) = -Twb_inv(1, 3);
+		// Twb_inv(2, 3) = -Twb_inv(2, 3);
+		// pcl::transformPointCloud(*refCloud, *refCloud, Twb_inv);
+		// *refCloud += *laserCloudIn;
+		// pcl::transformPointCloud(*refCloud, *refCloud, Twb);
+		
 
 		timer.toc();
 		// 5. publish result

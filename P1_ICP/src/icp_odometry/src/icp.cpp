@@ -52,10 +52,10 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
 		// if (correspondences_filtered->points.size() == 0) {
 		// 	break;
 		// }
-	
+
 		Eigen::Matrix<double, 3, Eigen::Dynamic> src(3, correspondences->points.size());
 		Eigen::Matrix<double, 3, Eigen::Dynamic> tar(3, correspondences->points.size());
-	
+
 		for (int i = 0; i < correspondences->points.size(); i++) {
 			src(0, i) = transformed_cloud->points[i].x;
 			src(1, i) = transformed_cloud->points[i].y;
@@ -64,7 +64,7 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
 			tar(1, i) = correspondences->points[i].y;
 			tar(2, i) = correspondences->points[i].z;
 		}
-      
+
 		Eigen::Matrix<double, 3, 1> src_mean = src.rowwise().mean();
 		Eigen::Matrix<double, 3, 1> tar_mean = tar.rowwise().mean();
 
@@ -97,14 +97,14 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
 
 
 		transformation = update_transformation * transformation;
-		
+
 		if ((transformation - prev_transformation).norm() < params::max_distance) {
 			break;
 		} else {
 			prev_transformation = transformation;
 		}
-		
-		// pcl::transformPointCloud(*src_cloud, *transformed_cloud, _transformation);
+
+		pcl::transformPointCloud(*src_cloud, *transformed_cloud, transformation);
 		// // check if transformed cloud is not empty
 		// if (transformed_cloud->points.size() > 0) {
 		// 	transformation = _transformation;
@@ -117,7 +117,6 @@ Eigen::Matrix4d icp_registration(pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud,
 		// prevent destructor error
 		correspondences.reset();
 		// correspondences_filtered.reset();
-		
 	}
 
 	return transformation;
