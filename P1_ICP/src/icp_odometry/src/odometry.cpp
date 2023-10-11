@@ -78,12 +78,12 @@ void OdomICP::run() {
 		// Odometry estimation
 
 		// 1. preprocess: downsample
-		//create a point cloud copy the refCloud to prepare src cloud for isp
+		// create a point cloud copy the refCloud to prepare src cloud for isp
 		pcl::PointCloud<pcl::PointXYZ>::Ptr src_cloud(new pcl::PointCloud<pcl::PointXYZ>);
 		*src_cloud = *refCloud;
-		
+
 		// pcl::transformPointCloud(*src_cloud, *src_cloud, Twb_gt);
-		
+
 		if (laserCloudIn->empty()) {
 			continue;
 		}
@@ -114,8 +114,8 @@ void OdomICP::run() {
 			*refCloud = *laserCloudIn;
 		}
 
-		//implement scan to map
-		// Eigen::Matrix3d Rwb = Twb.block<3, 3>(0, 0).inverse();
+		// implement scan to map
+		//  Eigen::Matrix3d Rwb = Twb.block<3, 3>(0, 0).inverse();
 
 
 		// Rwb = Rwb.inverse();
@@ -139,7 +139,7 @@ void OdomICP::run() {
 		// pcl::transformPointCloud(*refCloud, *refCloud, Twb_inv);
 		// *refCloud += *laserCloudIn;
 		// pcl::transformPointCloud(*refCloud, *refCloud, Twb);
-		
+
 
 		timer.toc();
 		// 5. publish result
