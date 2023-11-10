@@ -116,6 +116,7 @@ Eigen::MatrixXd EKFSLAM::jacobGt(const Eigen::VectorXd& state, Eigen::Vector2d u
     Gt_x(0, 2) = -ut(0) * dt * sin(state(2));
     Gt_x(1, 2) = ut(0) * dt * cos(state(2));
     Gt.block(0, 0, 3, 3) = Gt_x; 
+
 	return Gt;
 }
 
@@ -125,7 +126,10 @@ Eigen::MatrixXd EKFSLAM::jacobFt(const Eigen::VectorXd& state, Eigen::Vector2d u
 	/**
 	 * TODO: implement the Jacobian Ft
 	 */
-    Ft.block(0, 0, 3, 3) = Eigen::Matrix3d::Identity();
+    Ft(0, 0) = dt * cos(state(2));
+    Ft(1, 0) = dt * sin(state(2));
+    Ft(2, 1) = dt;
+
 	return Ft;
 }
 
