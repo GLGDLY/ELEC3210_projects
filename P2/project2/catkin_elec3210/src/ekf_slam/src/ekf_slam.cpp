@@ -37,7 +37,7 @@ EKFSLAM::EKFSLAM(ros::NodeHandle &nh):
     mState = Eigen::VectorXd::Zero(3); // x, y, yaw
     mCov = Eigen::MatrixXd::Zero(3, 3); // covariance matrix
     R = Eigen::MatrixXd::Zero(2, 2); // process noise: Rn = cov(n), which n = [v, w]
-    Q = Q; // measurement noise
+    Q = Eigen::MatrixXd::Zero(2, 2); // measurement noise: Qn = cov(n), which n = [r, phi]
 
     std::cout << "EKF SLAM initialized" << std::endl;
 }
@@ -162,6 +162,15 @@ void EKFSLAM::addNewLandmark(const Eigen::Vector2d& lm, const Eigen::MatrixXd& I
 	/**
 	 * TODO: implement the function
 	 */
+    int num_landmarks = (mState.rows() - 3) / 2;
+    Eigen::VectorXd state_new = Eigen::VectorXd::Zero(mState.rows() + 2);
+    Eigen::MatrixXd cov_new = Eigen::MatrixXd::Zero(mCov.rows() + 2, mCov.cols() + 2);
+    state_new.segment(0, mState.rows()) = mState;
+    state_new.segment(mState.rows(), 2) = lm;
+    cov_new.block(0, 0, mCov.rows(), mCov.cols()) = mCov;
+    cov_new.block(mCov.rows(), mCov.cols(), 2, 2) = InitCov;
+    mState = state_new;
+    mCov = cov_new;
 }
 
 void EKFSLAM::accumulateMap(){
@@ -193,13 +202,13 @@ void EKFSLAM::updateMeasurement(){
 		 * **/
 
         // update the indices if the landmark already exists in the state vector
-        // for (int j = 0; j < num_landmarks; ++j) {
-        //     const Eigen::Vector2d& landmark = mState.block<2, 1>(3 + j * 2, 0);
-        //     if ((pt_transformed - landmark).norm() < 0.5){
-        //         indices(i) = j;
-        //         break;
-        //     }
-        // }
+        for (int j = 0; j < num_landmarks; ++j) {
+            const Eigen::Vector2d& landmark = mState.block<2, 1>(3 + j * 2, 0);
+            if ((pt_transformed - landmark).norm() < 0.5){
+                indices(i) = j;
+                break;
+            }
+        }
 
         // update the indices if the landmark is new
         if (indices(i) == -1){
@@ -207,6 +216,7 @@ void EKFSLAM::updateMeasurement(){
             addNewLandmark(pt_transformed, Q);
         }
     }
+    // std::cout << globalId << std::endl;
     // simulating bearing model
     Eigen::VectorXd z = Eigen::VectorXd::Zero(2 * num_obs);
     for (int i = 0; i < num_obs; ++i) {
