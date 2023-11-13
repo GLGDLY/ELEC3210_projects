@@ -38,7 +38,7 @@ EKFSLAM::EKFSLAM(ros::NodeHandle &nh):
     mCov = Eigen::MatrixXd::Zero(3, 3); // covariance matrix
     R = Eigen::MatrixXd::Zero(2, 2); // process noise: Rn = cov(n), which n = [v, w]
     R(0, 0) = 0.1; // tune this
-    R(1, 1) = 0.25; // tune this
+    R(1, 1) = 0.2; // tune this
     Q = Eigen::MatrixXd::Zero(2, 2); // measurement noise: Qn = cov(n), which n = [r, phi]
 
     std::cout << "EKF SLAM initialized" << std::endl;
@@ -213,10 +213,10 @@ void EKFSLAM::updateMeasurement(){
         }
 
         // update the indices if the landmark is new
-        if (indices(i) == -1){
-            indices(i) = ++globalId;
-            addNewLandmark(pt_transformed, Q);
-        }
+        // if (indices(i) == -1){
+        //     indices(i) = ++globalId;
+        //     addNewLandmark(pt_transformed, Q);
+        // }
     }
     // std::cout << globalId << std::endl;
     // simulating bearing model
@@ -270,7 +270,7 @@ void EKFSLAM::updateMeasurement(){
         z_diff(1) = normalizeAngle(z_diff(1));
         _mState.segment<2>(3 + idx * 2) += mCov.block<2, 2>(3 + idx * 2, 3 + idx * 2).inverse() * mCov.block<2, 2>(3 + idx * 2, 3 + idx * 2) * z_diff;
         _mState(2) = normalizeAngle(_mState(2));
-        std::cout << (_mState.rows() - 3) / 2 << " " << _mState.size() << " ";
+        // std::cout << (_mState.rows() - 3) / 2 << " " << _mState.size() << " ";
 
         //update the covariance matrix
         //Eigen::MatrixXd Ht = Eigen::MatrixXd::Zero(2, _mState.rows());
@@ -297,8 +297,17 @@ void EKFSLAM::updateMeasurement(){
 
         Eigen::MatrixXd Kt = mCov * Ht.transpose() * (Ht * mCov * Ht.transpose() + Q).inverse();
         mCov = (Eigen::MatrixXd::Identity(_mState.rows(), _mState.rows()) - Kt * Ht) * mCov;
-        std::cout << mCov.size() << std::endl;
+        // std::cout << mCov.size() << std::endl;
 
+    }
+
+    xwb = mState.block<3, 1>(0, 0); // pose in the world frame
+    for (int i = 0; i < num_obs; ++i) {
+        Eigen::Vector2d pt_transformed = transform(cylinderPoints.row(i), xwb); // 2D pole center in the world frame
+        if (indices(i) == -1){
+            indices(i) = ++globalId;
+            addNewLandmark(pt_transformed, Q);
+        }
     }
 } 
 
