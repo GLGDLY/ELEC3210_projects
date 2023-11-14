@@ -37,8 +37,8 @@ EKFSLAM::EKFSLAM(ros::NodeHandle &nh):
     mState = Eigen::VectorXd::Zero(3); // x, y, yaw
     mCov = Eigen::MatrixXd::Zero(3, 3); // covariance matrix
     R = Eigen::MatrixXd::Zero(2, 2); // process noise: Rn = cov(n), which n = [v, w]
-    R(0, 0) = 0.1; // tune this
-    R(1, 1) = 0.2; // tune this
+    R(0, 0) = 0.095; // tune this
+    R(1, 1) = 0.198; // tune this
     Q = Eigen::MatrixXd::Zero(2, 2); // measurement noise: Qn = cov(n), which n = [r, phi]
 
     std::cout << "EKF SLAM initialized" << std::endl;
